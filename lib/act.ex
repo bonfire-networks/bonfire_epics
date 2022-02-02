@@ -1,9 +1,8 @@
-defmodule Bonfire.Epic.Act do
+defmodule Bonfire.Epics.Act do
   @enforce_keys [:module]
   defstruct @enforce_keys ++ [options: [], meta: nil]
 
-  alias Bonfire.Epic
-  alias Bonfire.Epic.Act
+  alias Bonfire.Epics.{Act, Epic}
 
   @type t :: %Act{
     module:  module,
@@ -14,6 +13,15 @@ defmodule Bonfire.Epic.Act do
   def new(module), do: %Act{module: module}
   def new(module, options), do: %Act{module: module, options: options}
   def new(module, options, meta), do: %Act{module: module, options: options, meta: meta}
+
+  defmacro debug(act, thing, label \\ "") do
+    quote do
+      require Logger
+      require Bonfire.Common.Utils
+      if unquote(act).options[:debug],
+        do: Bonfire.Common.Utils.log_debug(unquote(thing), unquote(label))
+    end
+  end
 
   @type ret :: Epic.t | Act.t | {:ok, Epic.t} | {:ok, Act.t} | {:ok, Epic.t, Act.t} | {:error, any}
 

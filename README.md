@@ -1,4 +1,4 @@
-# `bonfire_epic`
+# `bonfire_epics`
 
 A way of structuring tasks that is extension and customisability friendly.
 
@@ -10,7 +10,7 @@ A way of structuring tasks that is extension and customisability friendly.
 <!-- ```elixir -->
 <!-- def deps do -->
 <!--   [ -->
-<!--     {:bonfire_epic, "~> 0.1.0"} -->
+<!--     {:bonfire_epics, "~> 0.1.0"} -->
 <!--   ] -->
 <!-- end -->
 <!-- ``` -->

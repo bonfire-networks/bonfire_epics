@@ -1,4 +1,4 @@
-defmodule Bonfire.Epic.Error do
+defmodule Bonfire.Epics.Error do
   defexception [:error, :source, :act, :epic, :stacktrace]
 
   def message(self) do
