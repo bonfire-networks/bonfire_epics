@@ -8,7 +8,7 @@ defmodule Bonfire.Epics.Epic do
 
   alias Bonfire.Epics.{Act, Epic, Error}
   alias Bonfire.Common.Extend
-  import Bonfire.Common.Utils, only: [log_debug: 2]
+  import Where
   use Arrows
   require Act
   require Logger
@@ -31,7 +31,7 @@ defmodule Bonfire.Epics.Epic do
 
   def append(%Epic{}=self, acts) when is_list(acts), do: %{ self | next: self.next ++ acts }
   def append(%Epic{}=self, act), do: %{ self | next: self.next ++ [act] }
-    
+
   def add_error(epic, %Error{}=error), do: %{epic | errors: [error | epic.errors]}
   def add_error(epic, act, %Error{}=error), do: %{epic | errors: [error | epic.errors]}
   def add_error(epic, act, error, source \\ nil, stacktrace \\ nil),
@@ -87,7 +87,7 @@ defmodule Bonfire.Epics.Epic do
       other ->
         raise RuntimeError, message: """
         Invalid act return: #{inspect(other)}
-        
+
         Act: #{inspect(act)}
         """
     end
