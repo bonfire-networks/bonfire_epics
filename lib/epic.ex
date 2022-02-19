@@ -11,7 +11,7 @@ defmodule Bonfire.Epics.Epic do
   import Where
   use Arrows
   require Act
-  require Logger
+  import Where
   @type t :: %Epic{
     prev:   [Act.t],
     next:   [Act.t],
@@ -37,6 +37,14 @@ defmodule Bonfire.Epics.Epic do
   def add_error(epic, act, error, source \\ nil, stacktrace \\ nil),
     do: add_error(epic, %Error{error: error, act: act, epic: epic, source: source, stacktrace: stacktrace})
 
+  defmacro maybe_debug(epic, thing, label \\ "") do
+    quote do
+      import Where
+      if unquote(epic).assigns.options[:debug],
+        do: debug(unquote(thing), unquote(label))
+    end
+  end
+
   def run(%Epic{}=self) do
     case self.next do
       [%Act{}=act|acts] -> run_act(act, acts, self)
@@ -45,15 +53,14 @@ defmodule Bonfire.Epics.Epic do
   end
 
   defp run_act(act, rest, epic) do
-    debug? = epic.assigns.options[:debug]
     crash? = epic.assigns.options[:crash]
     epic = %{ epic | next: rest }
     cond do
       not Code.ensure_loaded?(act.module) ->
-        if debug?, do: Bonfire.Common.Utils.log_debug(act.module, "Act module not found, skipping")
+        maybe_debug(epic, act.module, "Act module not found, skipping")
         run(epic)
       not Extend.module_enabled?(act.module) ->
-        if debug?, do: Bonfire.Common.Utils.log_debug(act.module, "Act module disabled, skipping")
+        maybe_debug(epic, act.module, "Act module disabled, skipping")
         run(epic)
       not function_exported?(act.module, :run, 2) ->
         raise RuntimeError, message: "Could not run act (module callback not found), act #{inspect(act, pretty: true, printable_limit: :infinity)}"
@@ -73,8 +80,7 @@ defmodule Bonfire.Epics.Epic do
   end
 
   defp really_run_act(epic, act) do
-    debug? = epic.assigns.options[:debug]
-    if debug?, do: Bonfire.Common.Utils.log_debug(act.module, "Running act")
+    maybe_debug(epic, act.module, "Running act")
     # try do
     case apply(act.module, :run, [epic, act]) do
       %Epic{}=epic                    -> run(%{ epic | prev: [act | epic.prev]})
@@ -90,15 +96,6 @@ defmodule Bonfire.Epics.Epic do
 
         Act: #{inspect(act)}
         """
-    end
-  end
-
-  defmacro debug(epic, thing, label \\ "") do
-    quote do
-      require Logger
-      require Bonfire.Common.Utils
-      if unquote(epic).assigns.options[:debug],
-        do: Bonfire.Common.Utils.log_debug(unquote(thing), unquote(label))
     end
   end
 

@@ -3,7 +3,7 @@ if Code.ensure_loaded?(Bonfire.Common.Utils) do
     @moduledoc """
     An Act that enters a transaction if there are no changeset errors
     """
-    require Logger
+    import Where
     import Bonfire.Common.Utils
     alias Bonfire.Epics.{Act, Acts.Repo.Commit, Epic}
     require Act

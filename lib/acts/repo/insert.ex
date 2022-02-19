@@ -8,7 +8,7 @@ if Code.ensure_loaded?(Bonfire.Common.Utils) do
     alias Bonfire.Repo
     alias Ecto.Changeset
     require Act
-    require Logger
+    import Where
 
     def run(epic, act) do
       if epic.errors == [] do
@@ -32,14 +32,14 @@ if Code.ensure_loaded?(Bonfire.Common.Utils) do
       end
     end
 
-    
+
     # collates all the changesets that are present along with their source and destination keys.
     defp get_changeset(epic, act, source_and_dest_key) when is_atom(source_and_dest_key),
       do: get_changeset(epic, act, source_and_dest_key, source_and_dest_key)
-  
+
     defp get_changeset(epic, act, {dest_key, source_key}) when is_atom(source_key) and is_atom(dest_key),
       do: get_changeset(epic, act, source_key, dest_key)
-  
+
     defp get_changeset(epic, act, source_key, dest_key) do
       case epic.assigns[source_key] do
         nil ->
@@ -49,7 +49,7 @@ if Code.ensure_loaded?(Bonfire.Common.Utils) do
           [{cs, source_key, dest_key}]
       end
     end
-  
+
     defp do_inserts(epic, act, changesets) do
       case changesets do
         [] -> epic

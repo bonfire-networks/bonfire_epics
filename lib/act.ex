@@ -16,10 +16,9 @@ defmodule Bonfire.Epics.Act do
 
   defmacro debug(act, thing, label \\ "") do
     quote do
-      require Logger
-      require Bonfire.Common.Utils
+      use Bonfire.Common.Utils
       if unquote(act).options[:debug],
-        do: Bonfire.Common.Utils.log_debug(unquote(thing), unquote(label))
+        do: debug(unquote(thing), unquote(label))
     end
   end
 
