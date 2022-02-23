@@ -1,17 +1,17 @@
 defmodule Bonfire.Epics.Epic do
   defstruct [
     prev:    [],  # list of steps we've already run.
-    next:    [],  # the remaining steps, may modified during run.
+    next:    [],  # the remaining steps, may be modified during run.
     errors:  [],  # any errors accrued along the way.
     assigns: %{}, # any information accrued along the way
   ]
 
   alias Bonfire.Epics.{Act, Epic, Error}
   alias Bonfire.Common.Extend
-  import Where
+  require Where
   use Arrows
   require Act
-  import Where
+
   @type t :: %Epic{
     prev:   [Act.t],
     next:   [Act.t],
@@ -22,6 +22,9 @@ defmodule Bonfire.Epics.Epic do
   def assign(%Epic{}=self, name) when is_atom(name), do: self.assigns[name]
   def assign(%Epic{}=self, name, value) when is_atom(name),
     do: %{self | assigns: Map.put(self.assigns, name, value) }
+
+  def update(%Epic{}=self, name, default, fun),
+    do: assign(self, name, fun.(Map.get(self.assigns, name, default)))
 
   def new(next \\ [])
   def new(next) when is_list(next), do: %Epic{next: next}
@@ -39,9 +42,9 @@ defmodule Bonfire.Epics.Epic do
 
   defmacro maybe_debug(epic, thing, label \\ "") do
     quote do
-      import Where
+      require Where
       if unquote(epic).assigns.options[:debug],
-        do: debug(unquote(thing), unquote(label))
+        do: Where.debug(unquote(thing), unquote(label))
     end
   end
 
@@ -57,31 +60,34 @@ defmodule Bonfire.Epics.Epic do
     epic = %{ epic | next: rest }
     cond do
       not Code.ensure_loaded?(act.module) ->
-        maybe_debug(epic, act.module, "Act module not found, skipping")
+        Where.warn(act.module, "Skipping act, module not found")
         run(epic)
       not Extend.module_enabled?(act.module) ->
-        maybe_debug(epic, act.module, "Act module disabled, skipping")
+        maybe_debug(epic, act.module, "Skipping act, module disabled")
         run(epic)
       not function_exported?(act.module, :run, 2) ->
         raise RuntimeError, message: "Could not run act (module callback not found), act #{inspect(act, pretty: true, printable_limit: :infinity)}"
       crash? ->
-        really_run_act(epic, act)
+        run_act(epic, act)
       true ->
         try do
-          really_run_act(epic, act)
+          run_act(epic, act)
         rescue error ->
           # IO.puts(Exception.format_banner(:error, error, __STACKTRACE__))
           run(add_error(epic, error, act, :error, __STACKTRACE__))
-        catch  error ->
-          # IO.puts(Exception.format_banner(:throw, error, __STACKTRACE__))
-          run(add_error(epic, error, act, :throw, __STACKTRACE__))
+        catch
+          :exit, error ->
+            exit(error)
+            # run(add_error(epic, error, act, :exit, __STACKTRACE__))
+          error ->
+            # IO.puts(Exception.format_banner(:throw, error, __STACKTRACE__))
+            run(add_error(epic, error, act, :throw, __STACKTRACE__))
         end
     end
   end
 
-  defp really_run_act(epic, act) do
+  defp run_act(epic, act) do
     maybe_debug(epic, act.module, "Running act")
-    # try do
     case apply(act.module, :run, [epic, act]) do
       %Epic{}=epic                    -> run(%{ epic | prev: [act | epic.prev]})
       %Act{}=act                      -> run(%{ epic | prev: [act | epic.prev]})
@@ -96,6 +102,13 @@ defmodule Bonfire.Epics.Epic do
 
         Act: #{inspect(act)}
         """
+    end
+  end
+
+  defmacro debug(epic, thing, label \\ "") do
+    quote do
+      require Where
+      Where.debug?(unquote(thing, unquote(label), unquote(epic.assigns.options)))
     end
   end
 

@@ -2,12 +2,13 @@ defmodule Bonfire.Epics.Error do
   defexception [:error, :source, :act, :epic, :stacktrace]
 
   def message(self) do
-    kind = if self.source == :error, do: :error, else: :throw
-    Exception.format_banner(kind, self.error, self.stacktrace)
-    ++ """
+    # throw is the one that will render anything, default to it.
+    kind = if self.source in [:error, :exit], do: self.source, else: :throw
+    banner = Exception.format_banner(kind, self.error, self.stacktrace)
+    """
+    #{banner}
 
     In act: #{inspect(self.act)}
-    History (most recent first): #{inspect(self.epic.prev)}
     Assigns: #{inspect(self.epic.assigns)}
     """
   end

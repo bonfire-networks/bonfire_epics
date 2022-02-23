@@ -23,7 +23,8 @@ defmodule BonfireEpics.MixProject do
     [
       {:pointers, git: "https://github.com/bonfire-networks/pointers", branch: "main", override: true},
       {:bonfire_common, git: "https://github.com/bonfire-networks/bonfire_common", branch: "main"},
-      {:bonfire_repo, git: "https://github.com/bonfire-networks/bonfire_repo", branch: "main", optional: true},
+      {:bonfire_ecto, git: "https://github.com/bonfire-networks/bonfire_ecto", branch: "main", optional: true},
+      {:where, "~> 0.1"},
     ]
   end
 end
