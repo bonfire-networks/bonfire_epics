@@ -14,14 +14,6 @@ defmodule Bonfire.Epics.Act do
   def new(module, options), do: %Act{module: module, options: options}
   def new(module, options, meta), do: %Act{module: module, options: options, meta: meta}
 
-  defmacro debug(act, thing, label \\ "") do
-    quote do
-      use Bonfire.Common.Utils
-      if unquote(act).options[:debug],
-        do: debug(unquote(thing), unquote(label))
-    end
-  end
-
   @type ret :: Epic.t | Act.t | {:ok, Epic.t} | {:ok, Act.t} | {:ok, Epic.t, Act.t} | {:error, any}
 
   @callback run(Epic.t, Act.t) :: ret
