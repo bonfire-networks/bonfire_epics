@@ -4,13 +4,14 @@ if Code.ensure_loaded?(Bonfire.Common.Utils) do
     An Act that enters a transaction if there are no changeset errors
     """
     import Bonfire.Common.Utils
+    alias Bonfire.Epics
     alias Bonfire.Epics.{Act, Epic}
     alias Bonfire.Repo
     alias Ecto.Changeset
-    require Act
+    import Epics
     import Where
 
-    def run(epic, act) do
+    def run(%Epic{} = epic, %Act{} = act) do
       if epic.errors == [] do
         # work through the inputs to discover which are actually present
         changesets =
@@ -18,16 +19,16 @@ if Code.ensure_loaded?(Bonfire.Common.Utils) do
           |> Enum.flat_map(&get_changeset(epic, act, &1))
         invalid = Enum.reject(changesets, fn {c,_,_} -> c.valid? end)
         if invalid == [] do
-          Act.debug(act, "No changeset errors, proceeding to insert.")
+          maybe_debug(act, "No changeset errors, proceeding to insert.", "insert")
           do_inserts(epic, act, changesets)
         else
-          Act.debug(act, "Not proceeding because of changeset errors at keys: #{inspect(Enum.map(invalid, &elem(&1, 1)))}.")
+          maybe_debug(act, Enum.map(invalid, &elem(&1, 1)), "Not proceeding because of changeset errors at keys")
           Enum.reduce(invalid, epic, fn {cs,_,_}, epic ->
             Epic.add_error(epic, act, cs, :changeset)
           end)
         end
       else
-        Act.debug(act, length(epic.errors), "Skipping because of epic errors")
+        maybe_debug(act, length(epic.errors), "Skipping because of epic errors")
         epic
       end
     end
@@ -43,7 +44,7 @@ if Code.ensure_loaded?(Bonfire.Common.Utils) do
     defp get_changeset(epic, act, source_key, dest_key) do
       case epic.assigns[source_key] do
         nil ->
-          Act.debug(act, "Assigns key #{source_key} is nil, not inserting to #{dest_key}")
+          maybe_debug(act, "Assigns key #{source_key} is nil, not inserting to #{dest_key}", "insert")
           []
         %Changeset{valid?: true}=cs ->
           [{cs, source_key, dest_key}]
@@ -56,10 +57,10 @@ if Code.ensure_loaded?(Bonfire.Common.Utils) do
         [{cs, source_key, dest_key}|rest] ->
           case Repo.insert(cs) do
             {:ok, cs} ->
-              Act.debug(act, "Inserted #{source_key} as #{dest_key}")
+              maybe_debug(act, "Inserted #{source_key} as #{dest_key}", "insert")
               do_inserts(Epic.assign(epic, dest_key, cs), act, rest)
             {:error, cs} ->
-              Act.debug(act, "Aborting because of changeset errors at key: #{source_key}.")
+              maybe_debug(act, source_key, "Aborting because of changeset errors at key")
               Epic.add_error(epic, act, cs, :changeset)
           end
       end

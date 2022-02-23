@@ -6,18 +6,47 @@ defmodule Bonfire.Epics.Epic do
     assigns: %{}, # any information accrued along the way
   ]
 
+  alias Bonfire.Epics
   alias Bonfire.Epics.{Act, Epic, Error}
   alias Bonfire.Common.Extend
   require Where
   use Arrows
   require Act
-
   @type t :: %Epic{
     prev:   [Act.t],
     next:   [Act.t],
     errors: [any],
     assigns: %{optional(atom) => any},
   }
+
+  @doc """
+  Loads an epic from the app's config
+  """
+  def from_config!(module, name) when is_atom(module) and is_atom(name) do
+    case Application.get_application(module) do
+      nil -> raise RuntimeError, message: "Module not found! #{module}"
+      app ->
+        Application.get_env(app, module, [])
+        |> Keyword.fetch!(:epics)
+        |> Keyword.fetch!(name)
+        |> from_spec!()
+    end
+  end
+
+  @doc """
+  Loads an epic from a specification of steps
+  """
+  def from_spec!(acts) when is_list(acts) do
+    for act <- acts do
+      case act do
+        module when is_atom(module) -> Act.new(module)
+        {module, options} when is_atom(module) and is_list(options) -> Act.new(module, options)
+        other ->
+          raise RuntimeError, message: "Bad act specification: #{inspect(other)}"
+      end
+    end
+    |> Epic.new()
+  end
 
   def assign(%Epic{}=self, name) when is_atom(name), do: self.assigns[name]
   def assign(%Epic{}=self, name, value) when is_atom(name),
@@ -34,6 +63,10 @@ defmodule Bonfire.Epics.Epic do
 
   def append(%Epic{}=self, acts) when is_list(acts), do: %{ self | next: self.next ++ acts }
   def append(%Epic{}=self, act), do: %{ self | next: self.next ++ [act] }
+
+  def update(epic, key, default_value, fun) do
+    %{ epic | assigns: Map.update(epic.assigns, key, default_value, fun) }
+  end
 
   def add_error(epic, %Error{}=error), do: %{epic | errors: [error | epic.errors]}
   def add_error(epic, act, %Error{}=error), do: %{epic | errors: [error | epic.errors]}
@@ -56,7 +89,7 @@ defmodule Bonfire.Epics.Epic do
   end
 
   defp run_act(act, rest, epic) do
-    crash? = epic.assigns.options[:crash]
+    crash? = epic.assigns[:options][:crash]
     epic = %{ epic | next: rest }
     cond do
       not Code.ensure_loaded?(act.module) ->
