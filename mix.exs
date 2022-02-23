@@ -23,6 +23,7 @@ defmodule BonfireEpics.MixProject do
     [
       {:where, "~> 0.1"},
       {:arrows, git: "https://github.com/bonfire-networks/arrows", branch: "main"},
+      {:bonfire_common, git: "https://github.com/bonfire-networks/bonfire_common", branch: "main", optional: true},
     ]
   end
 end
