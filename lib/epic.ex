@@ -77,7 +77,7 @@ defmodule Bonfire.Epics.Epic do
     quote do
       require Where
       if unquote(epic).assigns.options[:debug],
-        do: Where.debug(unquote(thing), unquote(label))
+        do: Where.warn(unquote(thing), unquote(label))
     end
   end
 
