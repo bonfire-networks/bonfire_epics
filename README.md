@@ -1,6 +1,6 @@
-# `bonfire_epics`
+# Bonfire.Epics
 
-A way of structuring tasks that is extension and customisability friendly.
+`Bonfire.Epics` is a way of structuring tasks that is extension and customisability friendly.
 
 <!-- ## Installation -->
 
