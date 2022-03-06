@@ -141,7 +141,7 @@ defmodule Bonfire.Epics.Epic do
   defmacro debug(epic, thing, label \\ "") do
     quote do
       require Where
-      Where.debug?(unquote(thing, unquote(label), unquote(epic.assigns.options)))
+      Where.debug?(unquote(thing), unquote(label), unquote(epic).assigns.options)
     end
   end
 
