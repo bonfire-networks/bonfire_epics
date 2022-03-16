@@ -8,7 +8,7 @@ defmodule Bonfire.Epics.Epic do
 
   alias Bonfire.Epics
   alias Bonfire.Epics.{Act, Epic, Error}
-  alias Bonfire.Common.Extend
+  import Bonfire.Common.Extend
   require Where
   use Arrows
   require Act
@@ -95,7 +95,7 @@ defmodule Bonfire.Epics.Epic do
       not Code.ensure_loaded?(act.module) ->
         Where.warn(act.module, "Skipping act, module not found")
         run(epic)
-      not Extend.module_enabled?(act.module) ->
+      not module_enabled?(act.module) ->
         maybe_debug(epic, act.module, "Skipping act, module disabled")
         run(epic)
       not function_exported?(act.module, :run, 2) ->
