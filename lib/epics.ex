@@ -21,10 +21,8 @@ defmodule Bonfire.Epics do
     opts = Macro.var(:opts, __MODULE__)
     quote do
       require Where
-      unquote(opts) = Map.to_list(Map.merge(Map.new(unquote(epic).assigns.options), Map.new(unquote(act).options)))
-      if unquote(opts)[:debug] do
-        Where.debug(unquote(thing), unquote(label))
-      end
+      unquote(opts) = Map.merge(Map.new(unquote(epic).assigns.options), Map.new(unquote(act).options))
+      Where.debug?(unquote(thing), unquote(label), unquote(opts))
     end
   end
 
@@ -38,7 +36,7 @@ defmodule Bonfire.Epics do
     quote do
       require Where
       unquote(opts) = Map.to_list(Map.merge(Map.new(unquote(epic).assigns.options), Map.new(unquote(act).options)))
-      Where.debug?(unquote(thing), unquote(label), unquote(opts))
+      Where.verbose?(unquote(thing), unquote(label), unquote(opts))
     end
   end
 
