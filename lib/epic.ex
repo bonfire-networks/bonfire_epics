@@ -12,6 +12,7 @@ defmodule Bonfire.Epics.Epic do
   require Where
   use Arrows
   require Act
+  alias Bonfire.Common.Config
   @type t :: %Epic{
     prev:   [Act.t],
     next:   [Act.t],
@@ -24,11 +25,9 @@ defmodule Bonfire.Epics.Epic do
   """
   def from_config!(module, name) when is_atom(module) and is_atom(name) do
     case Application.get_application(module) do
-      nil -> raise RuntimeError, message: "Module not found! #{module}"
+      nil -> raise RuntimeError, message: "Module's otp_app not found: #{module}"
       app ->
-        Application.get_env(app, module, [])
-        |> Keyword.fetch!(:epics)
-        |> Keyword.fetch!(name)
+        Config.get_ext!(app, [module, :epics, name])
         |> from_spec!()
     end
   end
