@@ -3,21 +3,31 @@ defmodule Bonfire.Epics.Debug do
   require Logger
   alias Bonfire.Epics.{Act, Epic}
 
-  @level :info # TODO: configurable
+  @level :debug # TODO: configurable
 
-  def do_maybe_debug(nil, %Act{} = act, thing, label) do
-    if act.options[:debug],
-      do: Logger.log(@level, "#{label} #{inspect thing}")
+  def do_maybe_debug(epic, act, thing, label) do
+    opts = opts(epic, act)
+
+    if opts[:debug],
+      do: Logger.log(opts[:level] || @level, "#{label} #{inspect thing}")
+
+    thing
   end
 
-  def do_maybe_debug(nil, %Epic{} = epic, thing, label) do
-    if epic.assigns[:options][:debug],
-      do: Logger.log(@level, "#{label} #{inspect thing}")
+  def opts(%Epic{} = epic, %Act{} = act) do
+    Map.merge(
+      Map.new(epic.assigns[:options] || %{}),
+      Map.new(act.options || %{})
+    )
   end
-
-  def do_maybe_debug(%Epic{} = epic, %Act{} = act, thing, label) do
-    if epic.assigns[:options][:debug] || act.options[:debug],
-      do: Logger.log(@level, "#{label} #{inspect thing}")
+  def opts(%Epic{} = epic, _) do
+    epic.assigns[:options] || %{}
+  end
+  def opts(_, %Act{} = act) do
+    act.options || %{}
+  end
+  def opts(_, _) do
+    %{}
   end
 
 end

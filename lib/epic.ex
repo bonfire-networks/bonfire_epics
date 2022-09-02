@@ -9,7 +9,7 @@ defmodule Bonfire.Epics.Epic do
   alias Bonfire.Epics
   alias Bonfire.Epics.{Act, Epic, Error}
   import Bonfire.Common.Extend
-  require Where
+  require Untangle
   use Arrows
   require Act
   alias Bonfire.Common.Config
@@ -74,9 +74,9 @@ defmodule Bonfire.Epics.Epic do
 
   defmacro maybe_debug(epic, thing, label \\ "") do
     quote do
-      require Where
+      require Untangle
       if unquote(epic).assigns.options[:debug],
-        do: Where.warn(unquote(thing), unquote(label))
+        do: Untangle.warn(unquote(thing), unquote(label))
     end
   end
 
@@ -92,7 +92,7 @@ defmodule Bonfire.Epics.Epic do
     epic = %{ epic | next: rest }
     cond do
       not Code.ensure_loaded?(act.module) ->
-        Where.warn(act.module, "Skipping act, module not found")
+        Untangle.warn(act.module, "Skipping act, module not found")
         run(epic)
       not module_enabled?(act.module) ->
         maybe_debug(epic, act.module, "Skipping act, module disabled")
@@ -139,8 +139,8 @@ defmodule Bonfire.Epics.Epic do
 
   defmacro debug(epic, thing, label \\ "") do
     quote do
-      require Where
-      Where.debug?(unquote(thing), unquote(label), unquote(epic).assigns.options)
+      require Untangle
+      Untangle.maybe_dbg(unquote(thing), unquote(label), unquote(epic).assigns.options)
     end
   end
 

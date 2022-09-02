@@ -17,7 +17,7 @@ defmodule BonfireEpics.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:where, "~> 0.1"},
+      {:untangle, "~> 0.1"},
       {:arrows, git: "https://github.com/bonfire-networks/arrows", branch: "main"},
       {:bonfire_common, git: "https://github.com/bonfire-networks/bonfire_common", branch: "main", optional: true},
     ]

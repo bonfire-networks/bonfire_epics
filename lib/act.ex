@@ -21,8 +21,8 @@ defmodule Bonfire.Epics.Act do
 
   defmacro debug(act, thing, label \\ "") do
     quote do
-      require Where
-      Where.debug?(unquote(thing), unquote(label), unquote(act).assigns.options)
+      require Untangle
+      Untangle.maybe_dbg(unquote(thing), unquote(label), unquote(act).assigns.options)
     end
   end
 
