@@ -12,14 +12,18 @@ defmodule BonfireEpics.MixProject do
   end
 
   # Run "mix help compile.app" to learn about applications.
-  def application, do: [ extra_applications: [:logger] ]
+  def application, do: [extra_applications: [:logger]]
 
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
       {:untangle, "~> 0.1"},
-      {:arrows, git: "https://github.com/bonfire-networks/arrows", branch: "main"},
-      {:bonfire_common, git: "https://github.com/bonfire-networks/bonfire_common", branch: "main", optional: true},
+      {:arrows,
+       git: "https://github.com/bonfire-networks/arrows", branch: "main"},
+      {:bonfire_common,
+       git: "https://github.com/bonfire-networks/bonfire_common",
+       branch: "main",
+       optional: true}
     ]
   end
 end

@@ -5,6 +5,7 @@ defmodule Bonfire.Epics.Error do
     # throw is the one that will render anything, default to it.
     kind = if self.source in [:error, :exit], do: self.source, else: :throw
     banner = Exception.format_banner(kind, self.error, self.stacktrace)
+
     """
     #{banner}
 

@@ -1,6 +1,6 @@
 defmodule Bonfire.Epics.Test do
-
-  alias Bonfire.Epics.{Epic, Error}
+  alias Bonfire.Epics.Epic
+  alias Bonfire.Epics.Error
 
   defmacro assert_epic_ok(expr) do
     quote do
@@ -11,10 +11,10 @@ defmodule Bonfire.Epics.Test do
     end
   end
 
-  def debug_error(%Epic{}=epic) do
+  def debug_error(%Epic{} = epic) do
     for error <- epic.errors, do: debug_error(error)
   end
-  def debug_error(%Error{}=error), do: IO.puts(Error.message(error))
-  def debug_error(error), do: IO.inspect(error)
 
+  def debug_error(%Error{} = error), do: IO.puts(Error.message(error))
+  def debug_error(error), do: IO.inspect(error)
 end
