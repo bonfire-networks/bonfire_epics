@@ -3,14 +3,12 @@ defmodule Bonfire.Epics.Debug do
   alias Bonfire.Epics.Act
   alias Bonfire.Epics.Epic
 
-  # TODO: configurable
-  @level :debug
-
   def do_maybe_debug(epic, act, thing, label) do
     opts = opts(epic, act)
 
-    if opts[:debug],
-      do: Logger.log(opts[:level] || @level, "#{label} #{inspect(thing)}")
+    if opts[:debug] || opts[:level],
+      do: Logger.log(opts[:level] || :warn, "#{label} #{inspect(thing)}"),
+      else: Logger.log(:debug, "#{label} #{inspect(thing)}")
 
     thing
   end
