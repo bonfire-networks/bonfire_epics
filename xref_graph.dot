@@ -1,0 +1,14 @@
+digraph "xref graph" {
+  "lib/act.ex"
+  "lib/debug.ex"
+  "lib/debug.ex" -> "lib/act.ex" [label="(export)"]
+  "lib/debug.ex" -> "lib/epic.ex" [label="(export)"]
+  "lib/epic.ex" -> "lib/act.ex" [label="(export)"]
+  "lib/epic.ex" -> "lib/error.ex" [label="(export)"]
+  "lib/epic.ex"
+  "lib/epics.ex"
+  "lib/error.ex"
+  "lib/test.ex"
+  "lib/test.ex" -> "lib/epic.ex" [label="(export)"]
+  "lib/test.ex" -> "lib/error.ex" [label="(export)"]
+}

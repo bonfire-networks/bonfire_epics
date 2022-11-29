@@ -1,7 +1,20 @@
+Code.eval_file("mess.exs", (if File.exists?("../../lib/mix/mess.exs"), do: "../../lib/mix/"))
+
 defmodule BonfireEpics.MixProject do
   use Mix.Project
 
   def project do
+    if File.exists?("../../.is_umbrella.exs") do
+      [
+        build_path: "../../_build",
+        config_path: "../../config/config.exs",
+        deps_path: "../../deps",
+        lockfile: "../../mix.lock"
+      ]
+    else
+      []
+    end
+    ++
     [
       app: :bonfire_epics,
       version: "0.1.0",
@@ -16,7 +29,7 @@ defmodule BonfireEpics.MixProject do
 
   # Run "mix help deps" to learn about dependencies.
   defp deps do
-    [
+    Mess.deps [
       {:untangle, "~> 0.1"},
       {:arrows,
        git: "https://github.com/bonfire-networks/arrows", branch: "main"},

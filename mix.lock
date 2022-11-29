@@ -1,4 +1,0 @@
-%{
-  "arrows": {:git, "https://github.com/bonfire-networks/arrows", "b49f7f4b2c175371196a35c70f384b92f8e34b7a", [branch: "main"]},
-  "where": {:hex, :where, "0.1.0", "f095d1519f5e97c1324fd985497a0401dc8cb12545d7172c08a1380b6ed42649", [:mix], [], "hexpm", "8c6e486bd38205605caca242fc5f5c3431cfc1d414e8d152e0f9e016026b0880"},
-}
