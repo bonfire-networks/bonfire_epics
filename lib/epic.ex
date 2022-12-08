@@ -8,15 +8,15 @@ defmodule Bonfire.Epics.Epic do
             # any information accrued along the way
             assigns: %{}
 
-  alias Bonfire.Epics
   alias Bonfire.Epics.Act
   alias Bonfire.Epics.Epic
   alias Bonfire.Epics.Error
 
-  import Bonfire.Common.Extend
   require Untangle
   use Arrows
   require Act
+  import Bonfire.Common.Extend
+  alias Bonfire.Common.Utils
   alias Bonfire.Common.Config
 
   @type t :: %Epic{
@@ -44,19 +44,23 @@ defmodule Bonfire.Epics.Epic do
   Loads an epic from a specification of steps
   """
   def from_spec!(acts) when is_list(acts) do
-    for act <- acts do
+    Enum.map(acts, fn act ->
       case act do
-        module when is_atom(module) ->
-          Act.new(module)
+        _ when is_atom(act) ->
+          Act.new(act)
 
         {module, options} when is_atom(module) and is_list(options) ->
           Act.new(module, options)
 
+        _ when is_list(act) ->
+          # TODO: run a list of Acts in parallel
+          from_spec!(act)
+
         other ->
           raise RuntimeError,
-            message: "Bad act specification: #{inspect(other)}"
+            message: "Bad `Act` specification: #{inspect(other)}"
       end
-    end
+    end)
     |> Epic.new()
   end
 
@@ -65,8 +69,12 @@ defmodule Bonfire.Epics.Epic do
   def assign(%Epic{} = self, name, value) when is_atom(name),
     do: %{self | assigns: Map.put(self.assigns, name, value)}
 
-  def update(%Epic{} = self, name, default, fun),
+  def update(%Epic{} = self, name, default, fun) when is_function(fun),
     do: assign(self, name, fun.(Map.get(self.assigns, name, default)))
+
+  def update(epic, name, default_value, fun) when is_function(fun) do
+    %{epic | assigns: Map.update(epic.assigns, name, default_value, fun)}
+  end
 
   def new(next \\ [])
   def new(next) when is_list(next), do: %Epic{next: next}
@@ -81,14 +89,10 @@ defmodule Bonfire.Epics.Epic do
 
   def append(%Epic{} = self, act), do: %{self | next: self.next ++ [act]}
 
-  def update(epic, key, default_value, fun) do
-    %{epic | assigns: Map.update(epic.assigns, key, default_value, fun)}
-  end
-
   def add_error(epic, %Error{} = error),
     do: %{epic | errors: [error | epic.errors]}
 
-  def add_error(epic, act, %Error{} = error),
+  def add_error(epic, _act, %Error{} = error),
     do: %{epic | errors: [error | epic.errors]}
 
   def add_error(epic, act, error, source \\ nil, stacktrace \\ nil),
@@ -111,16 +115,66 @@ defmodule Bonfire.Epics.Epic do
     end
   end
 
-  def run(%Epic{} = self) do
-    case self.next do
-      [%Act{} = act | acts] -> run_act(act, acts, self)
-      [] -> self
+  def run(%Epic{} = epic) do
+    case epic.next do
+      [%Act{} = act | next_acts] ->
+        # run next Act
+        maybe_run_act(act, %{epic | next: next_acts})
+
+      [%{next: parallel_acts} | next_acts] ->
+        # run some async Acts in parallel
+        # NOTE: should we instead run in background (and not await) and use handle_info to notify the liveview only in case there was an error? see https://hexdocs.pm/elixir/Task.html#await/2-compatibility-with-otp-behaviours
+
+        epic =
+          epic
+          |> Map.put(:next, [])
+          |> Untangle.dump("epic")
+
+        Untangle.dump(next_acts, "run after parallel")
+
+        parallel_acts
+        |> Untangle.dump("WIP: run in parallel")
+        |> Enum.map(fn act ->
+          Task.async(fn -> maybe_run_act(act, epic) end)
+        end)
+        # timeout in 15 min, to support slow operation like file uploads - TODO: configurable in the epic definition
+        |> Task.await_many(1_000_000)
+        |> Untangle.dump("parallel done")
+        |> Enum.reduce(fn x, acc ->
+          Map.merge(x, acc, fn key, prev, next ->
+            cond do
+              is_list(prev) ->
+                # append errors
+                prev ++ next
+
+              is_map(prev) ->
+                # TODO: only merge what we actually need
+                Utils.deep_merge(prev, next, replace_lists: true)
+
+              next == nil ->
+                prev
+
+              true ->
+                next
+            end
+          end)
+        end)
+        |> Untangle.dump("parallel merged return")
+        # continue to run acts (if any) *after* the parallel ones
+        |> Map.put(:next, next_acts)
+        |> run()
+
+      [] ->
+        # all Acts are done
+        epic
+
+      other ->
+        Untangle.error(other, "There seems to be an error in the definition of epics")
     end
   end
 
-  defp run_act(act, rest, epic) do
+  defp maybe_run_act(act, epic) do
     crash? = epic.assigns[:options][:crash]
-    epic = %{epic | next: rest}
 
     cond do
       not Code.ensure_loaded?(act.module) ->
@@ -128,6 +182,7 @@ defmodule Bonfire.Epics.Epic do
         run(epic)
 
       not module_enabled?(act.module) ->
+        # TODO: need to check if the module is disabled for the current user
         maybe_debug(epic, act.module, "Skipping act, module disabled")
         run(epic)
 
@@ -137,11 +192,11 @@ defmodule Bonfire.Epics.Epic do
             "Could not run act (module callback not found), act #{inspect(act, pretty: true, printable_limit: :infinity)}"
 
       crash? ->
-        run_act(epic, act)
+        do_run_act(epic, act)
 
       true ->
         try do
-          run_act(epic, act)
+          do_run_act(epic, act)
         rescue
           error ->
             # IO.puts(Exception.format_banner(:error, error, __STACKTRACE__))
@@ -158,7 +213,7 @@ defmodule Bonfire.Epics.Epic do
     end
   end
 
-  defp run_act(epic, act) do
+  defp do_run_act(epic, act) do
     maybe_debug(epic, act.module, "Running act")
 
     case apply(act.module, :run, [epic, act]) do
