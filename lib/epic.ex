@@ -128,18 +128,19 @@ defmodule Bonfire.Epics.Epic do
         epic =
           epic
           |> Map.put(:next, [])
-          |> Untangle.dump("epic")
 
-        Untangle.dump(next_acts, "run after parallel")
+        # |> Untangle.dump("epic")
+
+        # Untangle.dump(next_acts, "run after parallel")
 
         parallel_acts
-        |> Untangle.dump("WIP: run in parallel")
+        # |> Untangle.dump("WIP: run in parallel")
         |> Enum.map(fn act ->
           Task.async(fn -> maybe_run_act(act, epic) end)
         end)
         # timeout in 15 min, to support slow operation like file uploads - TODO: configurable in the epic definition
         |> Task.await_many(1_000_000)
-        |> Untangle.dump("parallel done")
+        # |> Untangle.dump("parallel done")
         |> Enum.reduce(fn x, acc ->
           Map.merge(x, acc, fn key, prev, next ->
             cond do
@@ -159,7 +160,7 @@ defmodule Bonfire.Epics.Epic do
             end
           end)
         end)
-        |> Untangle.dump("parallel merged return")
+        # |> Untangle.dump("parallel merged return")
         # continue to run acts (if any) *after* the parallel ones
         |> Map.put(:next, next_acts)
         |> run()
