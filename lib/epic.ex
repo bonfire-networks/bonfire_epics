@@ -89,13 +89,10 @@ defmodule Bonfire.Epics.Epic do
 
   def append(%Epic{} = self, act), do: %{self | next: self.next ++ [act]}
 
-  def add_error(epic, %Error{} = error),
+  def add_error(%Epic{} = epic, %Error{} = error),
     do: %{epic | errors: [error | epic.errors]}
 
-  def add_error(epic, _act, %Error{} = error),
-    do: %{epic | errors: [error | epic.errors]}
-
-  def add_error(epic, act, error, source \\ nil, stacktrace \\ nil),
+  def add_error(%Epic{} = epic, act, error, source \\ nil, stacktrace \\ nil),
     do:
       add_error(epic, %Error{
         error: error,
@@ -138,7 +135,7 @@ defmodule Bonfire.Epics.Epic do
         |> Enum.map(fn act ->
           Task.async(fn -> maybe_run_act(act, epic) end)
         end)
-        # timeout in 15 min, to support slow operation like file uploads - TODO: configurable in the epic definition
+        # long timeout to support slow operation like file uploads - TODO: configurable in the epic definition
         |> Task.await_many(1_000_000)
         # |> Untangle.dump("parallel done")
         |> Enum.reduce(fn x, acc ->
@@ -146,7 +143,7 @@ defmodule Bonfire.Epics.Epic do
             cond do
               is_list(prev) ->
                 # append errors
-                prev ++ next
+                Enum.uniq(prev ++ next)
 
               is_map(prev) ->
                 # TODO: only merge what we actually need
@@ -201,15 +198,15 @@ defmodule Bonfire.Epics.Epic do
         rescue
           error ->
             # IO.puts(Exception.format_banner(:error, error, __STACKTRACE__))
-            run(add_error(epic, error, act, :error, __STACKTRACE__))
+            run(add_error(epic, act, error, :error, __STACKTRACE__))
         catch
           :exit, error ->
             exit(error)
 
-          # run(add_error(epic, error, act, :exit, __STACKTRACE__))
+          # run(add_error(epic, act, error, :exit, __STACKTRACE__))
           error ->
             # IO.puts(Exception.format_banner(:throw, error, __STACKTRACE__))
-            run(add_error(epic, error, act, :throw, __STACKTRACE__))
+            run(add_error(epic, act, error, :throw, __STACKTRACE__))
         end
     end
   end
@@ -260,4 +257,12 @@ defmodule Bonfire.Epics.Epic do
       )
     end
   end
+
+  def render_errors(%Epic{} = epic) do
+    for(error <- epic.errors, do: render_errors(error))
+    |> Enum.join("\n")
+  end
+
+  def render_errors(%Error{} = error), do: Error.message(error)
+  def render_errors(_), do: nil
 end

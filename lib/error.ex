@@ -1,16 +1,22 @@
 defmodule Bonfire.Epics.Error do
+  import Untangle
+
   defexception [:error, :source, :act, :epic, :stacktrace]
 
   def message(self) do
+    error = Bonfire.Common.Utils.error_msg(self.error)
+
+    # if Bonfire.Common.Config.get(:env) !=:prod do
     # throw is the one that will render anything, default to it.
     kind = if self.source in [:error, :exit], do: self.source, else: :throw
-    banner = Exception.format_banner(kind, self.error, self.stacktrace)
+    banner = Exception.format_banner(kind, error, self.stacktrace)
 
-    """
-    #{banner}
+    error(self.act, banner)
+    debug(self.stacktrace, "Act stacktrace")
+    debug(self.epic.assigns, "Act assigns")
 
-    In act: #{inspect(self.act)}
-    Assigns: #{inspect(self.epic.assigns)}
-    """
+    # else
+    error
+    # end
   end
 end
