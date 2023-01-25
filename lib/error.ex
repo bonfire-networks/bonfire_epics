@@ -4,7 +4,7 @@ defmodule Bonfire.Epics.Error do
   defexception [:error, :source, :act, :epic, :stacktrace]
 
   def message(self) do
-    error = Bonfire.Common.Utils.error_msg(self.error)
+    error = Bonfire.Common.Errors.error_msg(self.error)
 
     # if Bonfire.Common.Config.get(:env) !=:prod do
     # throw is the one that will render anything, default to it.

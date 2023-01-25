@@ -17,6 +17,7 @@ defmodule Bonfire.Epics.Epic do
   require Act
   import Bonfire.Common.Extend
   alias Bonfire.Common.Utils
+  alias Bonfire.Common.Enums
   alias Bonfire.Common.Config
 
   @type t :: %Epic{
@@ -147,7 +148,7 @@ defmodule Bonfire.Epics.Epic do
 
               is_map(prev) ->
                 # TODO: only merge what we actually need
-                Utils.deep_merge(prev, next, replace_lists: true)
+                Enums.deep_merge(prev, next, replace_lists: true)
 
               next == nil ->
                 prev
