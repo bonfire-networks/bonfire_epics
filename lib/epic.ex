@@ -16,7 +16,7 @@ defmodule Bonfire.Epics.Epic do
   use Arrows
   require Act
   import Bonfire.Common.Extend
-  alias Bonfire.Common.Utils
+  # alias Bonfire.Common.Utils
   alias Bonfire.Common.Enums
   alias Bonfire.Common.Config
 
@@ -140,7 +140,7 @@ defmodule Bonfire.Epics.Epic do
         |> Task.await_many(1_000_000)
         # |> Untangle.dump("parallel done")
         |> Enum.reduce(fn x, acc ->
-          Map.merge(x, acc, fn key, prev, next ->
+          Map.merge(x, acc, fn _key, prev, next ->
             cond do
               is_list(prev) ->
                 # append errors
