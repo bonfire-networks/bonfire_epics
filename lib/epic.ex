@@ -16,7 +16,7 @@ defmodule Bonfire.Epics.Epic do
   use Arrows
   require Act
   import Bonfire.Common.Extend
-  # alias Bonfire.Common.Utils
+  alias Bonfire.Common.Utils
   alias Bonfire.Common.Enums
   alias Bonfire.Common.Config
 
@@ -134,7 +134,7 @@ defmodule Bonfire.Epics.Epic do
         parallel_acts
         # |> Untangle.dump("WIP: run in parallel")
         |> Enum.map(fn act ->
-          Task.async(fn -> maybe_run_act(act, epic) end)
+          Utils.async_task(fn -> maybe_run_act(act, epic) end)
         end)
         # long timeout to support slow operation like file uploads - TODO: configurable in the epic definition
         |> Task.await_many(1_000_000)
