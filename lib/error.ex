@@ -6,7 +6,7 @@ defmodule Bonfire.Epics.Error do
   def message(self) do
     error = Bonfire.Common.Errors.error_msg(self.error)
 
-    # if Bonfire.Common.Config.get(:env) !=:prod do
+    # if Bonfire.Common.Config.env() !=:prod do
     # throw is the one that will render anything, default to it.
     kind = if self.source in [:error, :exit], do: self.source, else: :throw
     banner = Exception.format_banner(kind, error, self.stacktrace)
