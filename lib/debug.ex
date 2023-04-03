@@ -7,7 +7,7 @@ defmodule Bonfire.Epics.Debug do
     opts = opts(epic, act)
 
     if opts[:debug] || opts[:level],
-      do: Logger.log(opts[:level] || :warn, "#{label} #{inspect(thing)}"),
+      do: Logger.log(opts[:level] || :info, "#{label} #{inspect(thing)}"),
       else: Logger.log(:debug, "#{label} #{inspect(thing)}")
 
     thing

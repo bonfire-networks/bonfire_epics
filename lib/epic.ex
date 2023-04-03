@@ -108,7 +108,7 @@ defmodule Bonfire.Epics.Epic do
       require Untangle
 
       if unquote(epic).assigns.options[:debug],
-        do: Untangle.warn(unquote(thing), unquote(label)),
+        do: Untangle.info(unquote(thing), unquote(label)),
         else: Untangle.debug(unquote(thing), unquote(label))
     end
   end
