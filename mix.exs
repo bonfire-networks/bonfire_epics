@@ -1,6 +1,6 @@
 Code.eval_file("mess.exs", (if File.exists?("../../lib/mix/mess.exs"), do: "../../lib/mix/"))
 
-defmodule BonfireEpics.MixProject do
+defmodule Bonfire.Epics.MixProject do
   use Mix.Project
 
   def project do
