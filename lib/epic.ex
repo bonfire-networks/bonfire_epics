@@ -90,8 +90,10 @@ defmodule Bonfire.Epics.Epic do
 
   def append(%Epic{} = self, act), do: %{self | next: self.next ++ [act]}
 
-  def add_error(%Epic{} = epic, %Error{} = error),
-    do: %{epic | errors: [error | epic.errors]}
+  def add_error(%Epic{} = epic, %Error{} = error) do
+    Untangle.error(error)
+    %{epic | errors: [error | epic.errors]}
+  end
 
   def add_error(%Epic{} = epic, act, error, source \\ nil, stacktrace \\ nil),
     do:
@@ -176,27 +178,26 @@ defmodule Bonfire.Epics.Epic do
   defp maybe_run_act(act, epic) do
     crash? = epic.assigns[:options][:crash]
 
-    cond do
-      not Code.ensure_loaded?(act.module) ->
-        Untangle.warn(act.module, "Skipping act, module not found")
-        run(epic)
+    module = maybe_module(act.module, epic.assigns[:options])
 
-      not module_enabled?(act.module) ->
-        # TODO: need to check if the module is disabled for the current user
+    # ^ check if the module is disabled (incl. for the current user if available in the options assigns)
+
+    cond do
+      is_nil(module) ->
         maybe_debug(epic, act.module, "Skipping act, module disabled")
         run(epic)
 
-      not function_exported?(act.module, :run, 2) ->
+      not function_exported?(module, :run, 2) ->
         raise RuntimeError,
           message:
             "Could not run act (module callback not found), act #{inspect(act, pretty: true, printable_limit: :infinity)}"
 
       crash? ->
-        do_run_act(epic, act)
+        do_run_act(epic, act, module)
 
       true ->
         try do
-          do_run_act(epic, act)
+          do_run_act(epic, act, module)
         rescue
           error ->
             # IO.puts(Exception.format_banner(:error, error, __STACKTRACE__))
@@ -213,10 +214,10 @@ defmodule Bonfire.Epics.Epic do
     end
   end
 
-  defp do_run_act(epic, act) do
-    maybe_debug(epic, act.module, "Running act")
+  defp do_run_act(epic, act, module) do
+    maybe_debug(epic, module, "Running act")
 
-    case apply(act.module, :run, [epic, act]) do
+    case Utils.maybe_apply(module, :run, [epic, act]) do
       %Epic{} = epic ->
         run(%{epic | prev: [act | epic.prev]})
 
@@ -237,6 +238,10 @@ defmodule Bonfire.Epics.Epic do
 
       {:error, other} ->
         run(add_error(epic, act, other, :return))
+
+      # :not_applied ->
+      #   maybe_debug(epic, module, "Could not find/run act module/function (maybe it is simply disabled), skipping...")
+      #   run(%{epic | prev: [act | epic.prev]})
 
       other ->
         raise RuntimeError,
