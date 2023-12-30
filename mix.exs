@@ -30,9 +30,8 @@ defmodule Bonfire.Epics.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     Mess.deps [
-      {:untangle, "~> 0.1"},
-      {:arrows,
-       git: "https://github.com/bonfire-networks/arrows", branch: "main"},
+      {:untangle, "~> 0.3"},
+      {:arrows, "~> 0.1"},
       {:bonfire_common,
        git: "https://github.com/bonfire-networks/bonfire_common",
        branch: "main",
