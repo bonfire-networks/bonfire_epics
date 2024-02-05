@@ -140,7 +140,7 @@ defmodule Bonfire.Epics.Epic do
           Utils.apply_task(:async, fn -> maybe_run_act(act, epic) end)
         end)
         # long timeout to support slow operation like file uploads - TODO: configurable in the epic definition
-        |> Task.await_many(5_000_000)
+        |> Task.await_many(epic.assigns[:options][:timeout] || 5_000_000)
         # |> Untangle.dump("parallel done")
         |> Enum.reduce(fn x, acc ->
           Map.merge(x, acc, fn _key, prev, next ->
