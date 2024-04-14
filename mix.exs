@@ -34,7 +34,6 @@ defmodule Bonfire.Epics.MixProject do
       {:arrows, "~> 0.1"},
       {:bonfire_common,
        git: "https://github.com/bonfire-networks/bonfire_common",
-       branch: "main",
        optional: true}
     ]
   end
