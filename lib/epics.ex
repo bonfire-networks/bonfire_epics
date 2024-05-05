@@ -1,4 +1,6 @@
 defmodule Bonfire.Epics do
+  @moduledoc "./README.md" |> File.stream!() |> Enum.drop(1) |> Enum.join()
+
   defmacro maybe_debug(epic, act, thing, label) do
     quote do
       Bonfire.Epics.Debug.do_maybe_debug(
