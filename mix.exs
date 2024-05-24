@@ -31,7 +31,7 @@ defmodule Bonfire.Epics.MixProject do
   defp deps do
     Mess.deps [
       {:untangle, "~> 0.3"},
-      {:arrows, "~> 0.1"},
+      {:arrows, "~> 0.2"},
       {:bonfire_common,
        git: "https://github.com/bonfire-networks/bonfire_common",
        optional: true}
