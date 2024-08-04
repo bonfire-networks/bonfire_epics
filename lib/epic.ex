@@ -1,11 +1,24 @@
 defmodule Bonfire.Epics.Epic do
+  @moduledoc """
+  Represents and manages an Epic, which is a sequence of Acts to be executed.
+
+  An Epic is a struct containing lists of previous and next steps, errors, and assigns.
+
+  This module provides functionality to create, modify, and run Epics, as well as handle errors
+  and debugging.
+  """
+
+  @typedoc """
+  Represents an Epic struct.
+
+  - `:prev` - List of Acts that have already been run.
+  - `:next` - List of remaining Acts to be run (may be modified during run).
+  - `:errors` - List of errors (accrued during run).
+  - `:assigns` - Map of assigned values (may be modified during run).
+  """
   defstruct prev: [],
-            # list of steps we've already run.
-            # the remaining steps, may be modified during run.
             next: [],
-            # any errors accrued along the way.
             errors: [],
-            # any information accrued along the way
             assigns: %{}
 
   alias Bonfire.Epics.Act
@@ -28,21 +41,45 @@ defmodule Bonfire.Epics.Epic do
         }
 
   @doc """
-  Loads an epic from the app's config
+  Loads an epic from the app's config.
+
+  ## Parameters
+
+  - `config_key`: The config key to load, such as a module atom (in which case it will load it from that module's app config).
+  - `name`: The name atom of the epic in the config.
+
+  ## Examples
+
+      iex> Bonfire.Epics.Epic.from_config!(MyApp.Module, :my_epic)
+      %Bonfire.Epics.Epic{...}
+
+      iex> Bonfire.Epics.Epic.from_config!(:my_key, :my_other_epic)
+      %Bonfire.Epics.Epic{...}
+
   """
-  def from_config!(module, name) when is_atom(module) and is_atom(name) do
-    case Application.get_application(module) do
+  def from_config!(config_key, name) when is_atom(config_key) and is_atom(name) do
+    case Application.get_application(config_key) do
       nil ->
-        raise RuntimeError, message: "Module's otp_app not found: #{module}"
+        Config.get!([config_key, :epics, name])
 
       app ->
-        Config.get_ext!(app, [module, :epics, name])
+        Config.get_ext!(app, [config_key, :epics, name])
         |> from_spec!()
     end
   end
 
   @doc """
-  Loads an epic from a specification of steps
+  Creates an `Epic` from a specification of steps.
+
+  ## Parameters
+
+  - `acts`: A list of act specifications.
+
+  ## Examples
+
+      iex> Bonfire.Epics.Epic.from_spec!([MyAct, {OtherAct, [option: :value]}])
+      %Bonfire.Epics.Epic{...}
+
   """
   def from_spec!(acts) when is_list(acts) do
     Enum.map(acts, fn act ->
@@ -65,11 +102,44 @@ defmodule Bonfire.Epics.Epic do
     |> Epic.new()
   end
 
-  def assign(%Epic{} = self, name) when is_atom(name), do: self.assigns[name]
+  # def assign(%Epic{} = self, name) when is_atom(name), do: self.assigns[name]
 
+  @doc """
+  Assigns a value to the Epic's assigns.
+
+  ## Parameters
+
+  - `self`: The Epic struct.
+  - `name`: The atom key for the assign.
+  - `value`: The value to assign.
+
+  ## Examples
+
+      iex> epic = %Bonfire.Epics.Epic{}
+      iex> Bonfire.Epics.Epic.assign(epic, :foo, "bar")
+      %Bonfire.Epics.Epic{assigns: %{foo: "bar"}}
+
+  """
   def assign(%Epic{} = self, name, value) when is_atom(name),
     do: %{self | assigns: Map.put(self.assigns, name, value)}
 
+  @doc """
+  Updates an assign in the Epic using a function.
+
+  ## Parameters
+
+  - `self`: The Epic struct.
+  - `name`: The atom key for the assign.
+  - `default`: The default value if the assign doesn't exist.
+  - `fun`: The function to apply to the current value.
+
+  ## Examples
+
+      iex> epic = %Bonfire.Epics.Epic{assigns: %{count: 1}}
+      iex> Bonfire.Epics.Epic.update(epic, :count, 0, &(&1 + 1))
+      %Bonfire.Epics.Epic{assigns: %{count: 2}}
+
+  """
   def update(%Epic{} = self, name, default, fun) when is_function(fun),
     do: assign(self, name, fun.(Map.get(self.assigns, name, default)))
 
@@ -77,19 +147,78 @@ defmodule Bonfire.Epics.Epic do
     %{epic | assigns: Map.update(epic.assigns, name, default_value, fun)}
   end
 
+  @doc """
+  Creates a new Epic with the given list of next steps.
+
+  ## Parameters
+
+  - `next`: A list of Acts to be executed.
+
+  ## Examples
+
+      iex> Bonfire.Epics.Epic.new([MyAct, OtherAct])
+      %Bonfire.Epics.Epic{next: [MyAct, OtherAct]}
+
+  """
   def new(next \\ [])
   def new(next) when is_list(next), do: %Epic{next: next}
 
+  @doc """
+  Prepends Act(s) to the beginning of the Epic's next steps.
+
+  ## Parameters
+
+  - `self`: The Epic struct.
+  - `acts`: A list of Acts or a single Act to prepend.
+
+  ## Examples
+
+      iex> epic = %Bonfire.Epics.Epic{next: [Act2]}
+      iex> Bonfire.Epics.Epic.prepend(epic, [Act1])
+      %Bonfire.Epics.Epic{next: [Act1, Act2]}
+
+  """
   def prepend(%Epic{} = self, acts) when is_list(acts),
     do: %{self | next: acts ++ self.next}
 
   def prepend(%Epic{} = self, act), do: %{self | next: [act | self.next]}
 
+  @doc """
+  Appends Act(s) to the end of the Epic's next steps.
+
+  ## Parameters
+
+  - `self`: The Epic struct.
+  - `acts`: A list of Acts or a single Act to append.
+
+  ## Examples
+
+      iex> epic = %Bonfire.Epics.Epic{next: [Act1]}
+      iex> Bonfire.Epics.Epic.append(epic, [Act2])
+      %Bonfire.Epics.Epic{next: [Act1, Act2]}
+
+  """
   def append(%Epic{} = self, acts) when is_list(acts),
     do: %{self | next: self.next ++ acts}
 
   def append(%Epic{} = self, act), do: %{self | next: self.next ++ [act]}
 
+  @doc """
+  Adds an error to the Epic.
+
+  ## Parameters
+
+  - `epic`: The Epic struct.
+  - `error`: The Error struct to add.
+
+  ## Examples
+
+      iex> epic = %Bonfire.Epics.Epic{}
+      iex> error = %Bonfire.Epics.Error{error: "Something went wrong"}
+      iex> Bonfire.Epics.Epic.add_error(epic, error)
+      %Bonfire.Epics.Epic{errors: [%Bonfire.Epics.Error{error: "Something went wrong"}]}
+
+  """
   def add_error(%Epic{} = epic, %Error{} = error) do
     Untangle.error(error)
     %{epic | errors: [error | epic.errors]}
@@ -115,6 +244,20 @@ defmodule Bonfire.Epics.Epic do
     end
   end
 
+  @doc """
+  Runs the Epic, executing each Act in sequence (with some Acts optionally running in parallel).
+
+  ## Parameters
+
+  - `epic`: The Epic struct to run.
+
+  ## Examples
+
+      iex> epic = Bonfire.Epics.Epic.new([MyAct, OtherAct])
+      iex> Bonfire.Epics.Epic.run(epic)
+      %Bonfire.Epics.Epic{prev: [OtherAct, MyAct], next: [], ...}
+
+  """
   def run(%Epic{} = epic) do
     case epic.next do
       [%Act{} = act | next_acts] ->
@@ -265,6 +408,20 @@ defmodule Bonfire.Epics.Epic do
     end
   end
 
+  @doc """
+  Renders all errors in the Epic as a string.
+
+  ## Parameters
+
+  - `epic`: The Epic struct containing errors.
+
+  ## Examples
+
+      iex> epic = %Bonfire.Epics.Epic{errors: [%Bonfire.Epics.Error{error: "Error 1"}, %Bonfire.Epics.Error{error: "Error 2"}]}
+      iex> Bonfire.Epics.Epic.render_errors(epic)
+      "Error 1\\nError 2"
+
+  """
   def render_errors(%Epic{} = epic) do
     for(error <- epic.errors, do: render_errors(error))
     |> Enum.join("\n")
