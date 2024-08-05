@@ -1,5 +1,9 @@
 defmodule Bonfire.Epics do
   @moduledoc "./README.md" |> File.stream!() |> Enum.drop(1) |> Enum.join()
+  import Untangle
+  alias Bonfire.Common.Config
+  alias Bonfire.Common.Errors
+  alias Bonfire.Epics.Epic
 
   @doc """
   Runs a series of `Bonfire.Epics.Epic` operations based on configured Acts for this module.
@@ -35,6 +39,7 @@ defmodule Bonfire.Epics do
       {:ok, epic.assigns[on]}
     else
       e ->
+        # error(e, "Error running epic")
         if options[:return_epic_on_error] do
           e
         else

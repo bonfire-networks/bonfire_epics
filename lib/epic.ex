@@ -40,6 +40,28 @@ defmodule Bonfire.Epics.Epic do
           assigns: %{optional(atom) => any}
         }
 
+  defmacro maybe_debug(epic, thing, label \\ "") do
+    quote do
+      require Untangle
+
+      if unquote(epic).assigns.options[:debug],
+        do: Untangle.info(unquote(thing), unquote(label)),
+        else: Untangle.debug(unquote(thing), unquote(label))
+    end
+  end
+
+  defmacro debug(epic, thing, label \\ "") do
+    quote do
+      require Untangle
+
+      Untangle.maybe_dbg(
+        unquote(thing),
+        unquote(label),
+        unquote(epic).assigns.options
+      )
+    end
+  end
+
   @doc """
   Loads an epic from the app's config.
 
@@ -204,47 +226,6 @@ defmodule Bonfire.Epics.Epic do
   def append(%Epic{} = self, act), do: %{self | next: self.next ++ [act]}
 
   @doc """
-  Adds an error to the Epic.
-
-  ## Parameters
-
-  - `epic`: The Epic struct.
-  - `error`: The Error struct to add.
-
-  ## Examples
-
-      iex> epic = %Bonfire.Epics.Epic{}
-      iex> error = %Bonfire.Epics.Error{error: "Something went wrong"}
-      iex> Bonfire.Epics.Epic.add_error(epic, error)
-      %Bonfire.Epics.Epic{errors: [%Bonfire.Epics.Error{error: "Something went wrong"}]}
-
-  """
-  def add_error(%Epic{} = epic, %Error{} = error) do
-    Untangle.error(error)
-    %{epic | errors: [error | epic.errors]}
-  end
-
-  def add_error(%Epic{} = epic, act, error, source \\ nil, stacktrace \\ nil),
-    do:
-      add_error(epic, %Error{
-        error: error,
-        act: act,
-        epic: epic,
-        source: source,
-        stacktrace: stacktrace
-      })
-
-  defmacro maybe_debug(epic, thing, label \\ "") do
-    quote do
-      require Untangle
-
-      if unquote(epic).assigns.options[:debug],
-        do: Untangle.info(unquote(thing), unquote(label)),
-        else: Untangle.debug(unquote(thing), unquote(label))
-    end
-  end
-
-  @doc """
   Runs the Epic, executing each Act in sequence (with some Acts optionally running in parallel).
 
   ## Parameters
@@ -343,7 +324,7 @@ defmodule Bonfire.Epics.Epic do
           do_run_act(epic, act, module)
         rescue
           error ->
-            # IO.puts(Exception.format_banner(:error, error, __STACKTRACE__))
+            Untangle.error(Exception.format_banner(:error, error, __STACKTRACE__))
             run(add_error(epic, act, error, :error, __STACKTRACE__))
         catch
           :exit, error ->
@@ -351,7 +332,7 @@ defmodule Bonfire.Epics.Epic do
 
           # run(add_error(epic, act, error, :exit, __STACKTRACE__))
           error ->
-            # IO.puts(Exception.format_banner(:throw, error, __STACKTRACE__))
+            Untangle.error(Exception.format_banner(:throw, error, __STACKTRACE__))
             run(add_error(epic, act, error, :throw, __STACKTRACE__))
         end
     end
@@ -380,6 +361,7 @@ defmodule Bonfire.Epics.Epic do
         run(add_error(epic, error))
 
       {:error, other} ->
+        Untangle.error(other)
         run(add_error(epic, act, other, :return))
 
       # :not_applied ->
@@ -396,16 +378,37 @@ defmodule Bonfire.Epics.Epic do
     end
   end
 
-  defmacro debug(epic, thing, label \\ "") do
-    quote do
-      require Untangle
+  @doc """
+  Adds an error to the Epic.
 
-      Untangle.maybe_dbg(
-        unquote(thing),
-        unquote(label),
-        unquote(epic).assigns.options
-      )
-    end
+  ## Parameters
+
+  - `epic`: The Epic struct.
+  - `error`: The Error struct to add.
+
+  ## Examples
+
+      iex> epic = %Bonfire.Epics.Epic{}
+      iex> error = %Bonfire.Epics.Error{error: "Something went wrong"}
+      iex> Bonfire.Epics.Epic.add_error(epic, error)
+      %Bonfire.Epics.Epic{errors: [%Bonfire.Epics.Error{error: "Something went wrong"}]}
+
+  """
+  def add_error(%Epic{} = epic, %Error{} = error) do
+    Untangle.error(error)
+    %{epic | errors: [error | epic.errors]}
+  end
+
+  def add_error(%Epic{} = epic, act, error, source \\ nil, stacktrace \\ nil) do
+    Untangle.error(error)
+
+    add_error(epic, %Error{
+      error: error,
+      act: act,
+      epic: epic,
+      source: source,
+      stacktrace: stacktrace
+    })
   end
 
   @doc """
