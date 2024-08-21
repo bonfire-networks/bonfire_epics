@@ -80,7 +80,7 @@ defmodule Bonfire.Epics.Epic do
 
   """
   def from_config!(config_key, name) when is_atom(config_key) and is_atom(name) do
-    case Extend.application_for_module(config_key) do
+    case application_for_module(config_key) do
       nil ->
         Config.get!([config_key, :epics, name])
 
