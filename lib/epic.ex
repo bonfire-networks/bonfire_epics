@@ -24,6 +24,7 @@ defmodule Bonfire.Epics.Epic do
   alias Bonfire.Epics.Act
   alias Bonfire.Epics.Epic
   alias Bonfire.Epics.Error
+  alias Bonfire.Common.Errors
 
   require Untangle
   use Arrows
@@ -324,7 +325,7 @@ defmodule Bonfire.Epics.Epic do
           do_run_act(epic, act, module)
         rescue
           error ->
-            Untangle.error(Exception.format_banner(:error, error, __STACKTRACE__))
+            Untangle.error(Errors.format_banner(:error, error, __STACKTRACE__))
             run(add_error(epic, act, error, :error, __STACKTRACE__))
         catch
           :exit, error ->
@@ -332,7 +333,7 @@ defmodule Bonfire.Epics.Epic do
 
           # run(add_error(epic, act, error, :exit, __STACKTRACE__))
           error ->
-            Untangle.error(Exception.format_banner(:throw, error, __STACKTRACE__))
+            Untangle.error(Errors.format_banner(:throw, error, __STACKTRACE__))
             run(add_error(epic, act, error, :throw, __STACKTRACE__))
         end
     end

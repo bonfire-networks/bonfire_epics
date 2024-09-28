@@ -12,7 +12,7 @@ defmodule Bonfire.Epics.Error do
     banner = Errors.format_banner(kind, self.error, self.stacktrace)
 
     error(self.act, banner)
-    debug(self.stacktrace, "Act stacktrace")
+    debug(Untangle.format_stacktrace(self.stacktrace), "Act stacktrace")
     debug(self.epic.assigns, "Act assigns")
 
     # else
