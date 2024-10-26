@@ -342,7 +342,7 @@ defmodule Bonfire.Epics.Epic do
   defp do_run_act(epic, act, module) do
     maybe_debug(epic, module, "Running act")
 
-    case Utils.maybe_apply(module, :run, [epic, act]) do
+    case apply(module, :run, [epic, act]) do
       %Epic{} = epic ->
         run(%{epic | prev: [act | epic.prev]})
 
