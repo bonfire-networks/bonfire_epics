@@ -427,7 +427,7 @@ defmodule Bonfire.Epics.Epic do
 
   """
   def render_errors(%Epic{} = epic) do
-    for(error <- epic.errors, do: render_errors(error))
+    for(error <- epic.errors || [], do: render_errors(error))
     |> Enum.join("\n")
   end
 
