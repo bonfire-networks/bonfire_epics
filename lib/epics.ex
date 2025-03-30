@@ -36,10 +36,13 @@ defmodule Bonfire.Epics do
            |> Epic.run() do
       on = options[:on] || epic.assigns[:options][:on] || :result
 
+      error(on, "Return result from epic assign")
+
       {:ok, epic.assigns[on]}
     else
       e ->
-        # error(e, "Error running epic")
+        error(e, "Error running epic")
+
         if options[:return_epic_on_error] do
           e
         else

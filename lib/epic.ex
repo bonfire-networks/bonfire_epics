@@ -243,11 +243,12 @@ defmodule Bonfire.Epics.Epic do
   def run(%Epic{} = epic) do
     case epic.next do
       [%Act{} = act | next_acts] ->
-        # run next Act
+        Untangle.debug("run next Act")
         maybe_run_act(act, %{epic | next: next_acts})
 
       [%{next: parallel_acts} | next_acts] ->
-        # run some async Acts in parallel
+        Untangle.debug("run some async Acts in parallel")
+
         # NOTE: should we instead run in background (and not await) and use handle_info to notify the liveview only in case there was an error? see https://hexdocs.pm/elixir/Task.html#await/2-compatibility-with-otp-behaviours
 
         epic =
@@ -292,7 +293,7 @@ defmodule Bonfire.Epics.Epic do
         |> run()
 
       [] ->
-        # all Acts are done
+        Untangle.debug("all Acts in Epic ran")
         epic
 
       other ->
