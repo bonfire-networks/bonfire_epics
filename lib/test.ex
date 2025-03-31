@@ -1,4 +1,5 @@
 defmodule Bonfire.Epics.Test do
+  import Untangle
   alias Bonfire.Epics.Epic
   alias Bonfire.Epics.Error
 
@@ -15,6 +16,6 @@ defmodule Bonfire.Epics.Test do
     for error <- epic.errors, do: debug_error(error)
   end
 
-  def debug_error(%Error{} = error), do: IO.puts(Error.message(error))
-  def debug_error(error), do: IO.inspect(error)
+  def debug_error(%Error{} = error), do: error(Error.message(error))
+  def debug_error(error), do: error(error)
 end
