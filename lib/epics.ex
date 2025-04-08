@@ -36,7 +36,7 @@ defmodule Bonfire.Epics do
            |> Epic.run() do
       on = options[:on] || epic.assigns[:options][:on] || :result
 
-      error(on, "Return result from epic assign")
+      debug(on, "Return result from epic assign")
 
       {:ok, epic.assigns[on]}
     else
