@@ -32,7 +32,7 @@ defmodule Bonfire.Epics.Epic do
   import Bonfire.Common.Extend
   alias Bonfire.Common.Utils
   alias Bonfire.Common.Enums
-  alias Bonfire.Common.Config
+  use Bonfire.Common.Config
 
   @type t :: %Epic{
           prev: [Act.t()],
