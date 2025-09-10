@@ -342,6 +342,7 @@ defmodule Bonfire.Epics.Epic do
 
   defp do_run_act(epic, act, module) do
     maybe_debug(epic, module, "Running act")
+    Untangle.flood(module, "Running act")
 
     case apply(module, :run, [epic, act]) do
       %Epic{} = epic ->
