@@ -38,7 +38,16 @@ defmodule Bonfire.Epics do
 
       debug(on, "Return result from epic assign")
 
-      {:ok, epic.assigns[on]}
+      case epic.assigns[on] do
+        nil ->
+          # the epic ran without error but produced nothing on the result key
+          # (e.g. an act skipped due to missing/invalid inputs) — surface that as
+          # an error rather than a misleading `{:ok, nil}`
+          error(on, "The epic ran but returned no result")
+
+        result ->
+          {:ok, result}
+      end
     else
       e ->
         error(e, "Error running epic")
