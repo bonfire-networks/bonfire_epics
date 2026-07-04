@@ -25,6 +25,8 @@ defmodule Bonfire.Epics do
       {:ok, %{}}
   """
   def run_epic(config_key, type, options \\ []) do
+    # write-path attribution for StormRecorder (e.g. publish vs delete); rides the action dimension
+    Logger.metadata(action: "epic:#{type}")
     env = Config.env()
 
     options =
