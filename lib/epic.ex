@@ -269,11 +269,14 @@ defmodule Bonfire.Epics.Epic do
         |> Task.await_many(epic.assigns[:options][:timeout] || 5_000_000)
         # |> Untangle.dump("parallel done")
         |> Enum.reduce(fn x, acc ->
-          Map.merge(x, acc, fn _key, prev, next ->
+          Map.merge(x, acc, fn key, prev, next ->
             cond do
               is_list(prev) ->
                 # append errors
                 Enum.uniq(prev ++ next)
+
+              key == :assigns and is_map(prev) ->
+                merge_parallel_assigns(prev, next)
 
               is_map(prev) ->
                 # TODO: only merge what we actually need
@@ -435,4 +438,23 @@ defmodule Bonfire.Epics.Epic do
 
   def render_errors(%Error{} = error), do: Error.message(error)
   def render_errors(_), do: nil
+
+  # what parallel Acts assigned, merged: a top-level list keeps every branch's entries (in order, once each), so one Act's `Bonfire.Ecto.Acts.Work.add/2` isn't dropped because another branch's copy of the queue replaced it. A key only one branch touched is unchanged, and anything nested merges as before, lists replaced
+  defp merge_parallel_assigns(prev, next) do
+    Map.merge(prev, next, fn _key, prev_value, next_value ->
+      cond do
+        is_list(prev_value) and is_list(next_value) ->
+          Enum.uniq(prev_value ++ next_value)
+
+        is_map(prev_value) and is_map(next_value) ->
+          Enums.deep_merge(prev_value, next_value, replace_lists: true)
+
+        next_value == nil ->
+          prev_value
+
+        true ->
+          next_value
+      end
+    end)
+  end
 end
